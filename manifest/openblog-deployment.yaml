@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openblog-stage
+  namespace: openblog
+  labels:
+    app: openblog
+    ref: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openblog
+      ref: dev
+  template:
+    metadata:
+      labels:
+        app: openblog
+        ref: dev
+    spec:
+      containers:
+      - name: web
+        image: gcr.io/<your-project-id>/openblog:latest
+        imagePullPolicy: Always
+        env:
+          - name: DEBUG
+            value: "1"
+          - name: SECRET_KEY
+            value: "Please_Change_Me"
+          - name: DJANGO_ALLOWED_HOSTS
+            value: "localhost www.realei.tech [::1]"
+          - name: STATIC_URL
+            value: "http://storage.googleapis.com/<YOUR_GCS_BUCKET>/static/" 
+          - name: MEDIA_URL
+            value: "http://storage.googleapis.com/<YOUR_GCS_BUCKET>/media/" 
+          - name: SQL_ENGINE
+            value: "django.db.backends.postgresql"
+          - name: SQL_DATABASE
+            value: "openblog_dev"
+          - name: SQL_PORT
+            value: "5432"
+          - name: SQL_USER
+            value: "openblog"
+          - name: SQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: openblog-secret
+                key: db_password
+
+        ports:
+          - containerPort: 8000
+      # [START proxy_container]
+      - image: gcr.io/cloudsql-docker/gce-proxy:1.16
+        name: cloudsql-proxy
+        command: ["/cloud_sql_proxy", "--dir=/cloudsql",
+                  "-instances=<your-cloudsql-connection-string>=tcp:5432",
+                  "-credential_file=/secrets/cloudsql/credentials.json"]
+        volumeMounts:
+          - name: cloudsql-oauth-credentials
+            mountPath: /secrets/cloudsql
+            readOnly: true
+          - name: ssl-certs
+            mountPath: /etc/ssl/certs
+          - name: cloudsql
+            mountPath: /cloudsql
+      volumes:
+        - name: cloudsql-oauth-credentials
+          secret:
+            secretName: cloudsql-oauth-credentials
+        - name: ssl-certs
+          hostPath:
+            path: /etc/ssl/certs
+        - name: cloudsql
+          emptyDir:
+

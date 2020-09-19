@@ -1,0 +1,22 @@
+# Ignore virtualenv files 
+openblog-env
+
+# Ignore */__pycache__ and *.pyc *.swp
+*/__pycache__
+*.pyc
+*.swp
+
+# Ignore the NOTE.md, which is personal notebook for this project
+NOTE.md
+
+# Ignore the real secret file on Google GKE
+gke-*
+*env.dev
+*/keys
+
+# Ignore static and media files 
+static 
+media
+
+# Ignore Migration files
+*/migrations
